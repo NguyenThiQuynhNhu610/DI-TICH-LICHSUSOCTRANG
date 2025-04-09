@@ -1,0 +1,2650 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Du lich kien truc lich su</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/TINHTUOISOCTRANG_1.js"></script>
+        <script src="data/RanhgiiHuyn_2.js"></script>
+        <script src="data/Lpng_3.js"></script>
+        <script src="data/snggg_4.js"></script>
+        <script src="data/phnloaitheohuyn_5.js"></script>
+        <script src="data/phnloitheotui_6.js"></script>
+        <script src="data/PLCap_7.js"></script>
+        <script src="data/nuoc_8.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'topright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>Du lich kien truc lich su</h2>';
+        };
+        title.addTo(map);
+        var abstract = new L.Control({'position':'bottomright'});
+        abstract.onAdd = function (map) {
+            this._div = L.DomUtil.create('div',
+            'leaflet-control abstract');
+            this._div.id = 'abstract'
+
+                abstract.show();
+                return this._div;
+            };
+            abstract.show = function () {
+                this._div.classList.remove("abstract");
+                this._div.classList.add("abstractUncollapsed");
+                this._div.innerHTML = 'Đây là website do sinh viên thực hiện để hiển thị về phân hạng theo chùa ở sóc trăng';
+        };
+        abstract.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'feet',
+            secondaryLengthUnit: 'miles',
+            primaryAreaUnit: 'sqfeet',
+            secondaryAreaUnit: 'sqmiles'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_Positronretina_0');
+        map.getPane('pane_Positronretina_0').style.zIndex = 400;
+        var layer_Positronretina_0 = L.tileLayer('https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png', {
+            pane: 'pane_Positronretina_0',
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_Positronretina_0;
+        map.addLayer(layer_Positronretina_0);
+        function pop_TINHTUOISOCTRANG_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ager'] !== null ? autolinker.link(String(feature.properties['Ager']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_TINHTUOISOCTRANG_1_0(feature) {
+            switch(String(feature.properties['q2wHide_Tu?i'])) {
+                case '21':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,41,239,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '22':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(225,35,149,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '34':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(144,203,123,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '50':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(151,220,48,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '52':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(63,212,133,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '54':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(136,83,215,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '58':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,83,106,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '60':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(170,62,228,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '61':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(28,227,190,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '62':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(116,233,26,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '68':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,218,40,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '70':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,111,208,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '71':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(228,104,168,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '72':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(160,206,111,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '74':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(31,17,235,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '77':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,169,36,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '88':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(46,234,43,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '111':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(228,182,122,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '115':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(212,96,108,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '124':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(54,126,219,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '126':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(101,114,229,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '130':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,131,156,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '131':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,219,33,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '132':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,196,71,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '135':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(67,136,200,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '136':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(190,235,94,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '138':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,104,239,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '141':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,46,176,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '144':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(21,58,224,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '152':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(98,206,168,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '153':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(57,207,24,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '159':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(170,206,50,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '162':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(34,201,16,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '165':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(27,228,57,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '182':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(53,205,137,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '188':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(188,217,20,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '195':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(191,112,200,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '210':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,136,87,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '221':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(116,209,216,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '225':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(25,175,220,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '227':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(187,99,219,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '242':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(97,63,209,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '245':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(86,22,225,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '246':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(109,227,145,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '252':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(117,218,156,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '254':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,150,75,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '275':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(212,82,22,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '276':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(61,203,201,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '298':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(81,56,221,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '300':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(232,101,92,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '319':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(19,83,202,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '331':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(20,215,196,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '347':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(131,32,207,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '349':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(110,182,216,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '350':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,17,191,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '357':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,210,83,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '359':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,119,83,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '361':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(66,112,240,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '377':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(80,82,208,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '404':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(148,70,230,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '407':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,88,90,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '410':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,64,35,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '416':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(56,207,234,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '440':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(94,240,15,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '449':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(68,226,184,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '456':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,189,78,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '488':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,18,94,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '492':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(59,223,70,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '523':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(77,165,223,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '560':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(233,42,204,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '801':
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(207,106,150,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_TINHTUOISOCTRANG_1',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(38,240,81,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_TINHTUOISOCTRANG_1');
+        map.getPane('pane_TINHTUOISOCTRANG_1').style.zIndex = 401;
+        map.getPane('pane_TINHTUOISOCTRANG_1').style['mix-blend-mode'] = 'normal';
+        var layer_TINHTUOISOCTRANG_1 = new L.geoJson(json_TINHTUOISOCTRANG_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_TINHTUOISOCTRANG_1',
+            layerName: 'layer_TINHTUOISOCTRANG_1',
+            pane: 'pane_TINHTUOISOCTRANG_1',
+            onEachFeature: pop_TINHTUOISOCTRANG_1,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_TINHTUOISOCTRANG_1_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_TINHTUOISOCTRANG_1);
+        map.addLayer(layer_TINHTUOISOCTRANG_1);
+        function pop_RanhgiiHuyn_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">ID_0</th>\
+                        <td>' + (feature.properties['ID_0'] !== null ? autolinker.link(String(feature.properties['ID_0']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISO</th>\
+                        <td>' + (feature.properties['ISO'] !== null ? autolinker.link(String(feature.properties['ISO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NAME_0</th>\
+                        <td>' + (feature.properties['NAME_0'] !== null ? autolinker.link(String(feature.properties['NAME_0']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ID_1</th>\
+                        <td>' + (feature.properties['ID_1'] !== null ? autolinker.link(String(feature.properties['ID_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NAME_1</th>\
+                        <td>' + (feature.properties['NAME_1'] !== null ? autolinker.link(String(feature.properties['NAME_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ID_2</th>\
+                        <td>' + (feature.properties['ID_2'] !== null ? autolinker.link(String(feature.properties['ID_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NAME_2</th>\
+                        <td>' + (feature.properties['NAME_2'] !== null ? autolinker.link(String(feature.properties['NAME_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TYPE_2</th>\
+                        <td>' + (feature.properties['TYPE_2'] !== null ? autolinker.link(String(feature.properties['TYPE_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ENGTYPE_2</th>\
+                        <td>' + (feature.properties['ENGTYPE_2'] !== null ? autolinker.link(String(feature.properties['ENGTYPE_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NL_NAME_2</th>\
+                        <td>' + (feature.properties['NL_NAME_2'] !== null ? autolinker.link(String(feature.properties['NL_NAME_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">VARNAME_2</th>\
+                        <td>' + (feature.properties['VARNAME_2'] !== null ? autolinker.link(String(feature.properties['VARNAME_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_RanhgiiHuyn_2_0(feature) {
+            switch(String(feature.properties['NAME_2'])) {
+                case 'Châu Thành':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(73,255,1,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Cù Lao Dung':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,238,113,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Kế Sách':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,49,224,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Long My':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,201,128,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Long Phú':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,237,170,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Mỹ Tú':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,247,185,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Mỹ Xuyên':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(199,232,173,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Ngã Năm':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(157,211,166,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Thanh Trì':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(100,171,176,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Vĩnh Châu':
+                    return {
+                pane: 'pane_RanhgiiHuyn_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,225,1,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_RanhgiiHuyn_2');
+        map.getPane('pane_RanhgiiHuyn_2').style.zIndex = 402;
+        map.getPane('pane_RanhgiiHuyn_2').style['mix-blend-mode'] = 'normal';
+        var layer_RanhgiiHuyn_2 = new L.geoJson(json_RanhgiiHuyn_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_RanhgiiHuyn_2',
+            layerName: 'layer_RanhgiiHuyn_2',
+            pane: 'pane_RanhgiiHuyn_2',
+            onEachFeature: pop_RanhgiiHuyn_2,
+            style: style_RanhgiiHuyn_2_0,
+        });
+        bounds_group.addLayer(layer_RanhgiiHuyn_2);
+        map.addLayer(layer_RanhgiiHuyn_2);
+        function pop_Lpng_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ten duong'] !== null ? autolinker.link(String(feature.properties['Ten duong']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Loai duong'] !== null ? autolinker.link(String(feature.properties['Loai duong']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>chieu rong</strong><br />' + (feature.properties['chieu rong'] !== null ? autolinker.link(String(feature.properties['chieu rong']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['chieu dai'] !== null ? autolinker.link(String(feature.properties['chieu dai']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Lpng_3_0() {
+            return {
+                pane: 'pane_Lpng_3',
+                opacity: 1,
+                color: 'rgba(252,34,0,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 3.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Lpng_3');
+        map.getPane('pane_Lpng_3').style.zIndex = 403;
+        map.getPane('pane_Lpng_3').style['mix-blend-mode'] = 'normal';
+        var layer_Lpng_3 = new L.geoJson(json_Lpng_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Lpng_3',
+            layerName: 'layer_Lpng_3',
+            pane: 'pane_Lpng_3',
+            onEachFeature: pop_Lpng_3,
+            style: style_Lpng_3_0,
+        });
+        bounds_group.addLayer(layer_Lpng_3);
+        map.addLayer(layer_Lpng_3);
+        function pop_snggg_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['F_CODE_DES'] !== null ? autolinker.link(String(feature.properties['F_CODE_DES']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">HYC_DESCRI</th>\
+                        <td>' + (feature.properties['HYC_DESCRI'] !== null ? autolinker.link(String(feature.properties['HYC_DESCRI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAM'] !== null ? autolinker.link(String(feature.properties['NAM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ISO'] !== null ? autolinker.link(String(feature.properties['ISO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME_0'] !== null ? autolinker.link(String(feature.properties['NAME_0']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_snggg_4_0() {
+            return {
+                pane: 'pane_snggg_4',
+                opacity: 1,
+                color: 'rgba(1,196,255,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_snggg_4');
+        map.getPane('pane_snggg_4').style.zIndex = 404;
+        map.getPane('pane_snggg_4').style['mix-blend-mode'] = 'normal';
+        var layer_snggg_4 = new L.geoJson(json_snggg_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_snggg_4',
+            layerName: 'layer_snggg_4',
+            pane: 'pane_snggg_4',
+            onEachFeature: pop_snggg_4,
+            style: style_snggg_4_0,
+        });
+        bounds_group.addLayer(layer_snggg_4);
+        map.addLayer(layer_snggg_4);
+        function pop_phnloaitheohuyn_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Year of construction</th>\
+                        <td>' + (feature.properties['N?m X�y'] !== null ? autolinker.link(String(feature.properties['N?m X�y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Adress</th>\
+                        <td>' + (feature.properties['??a Ch?'] !== null ? autolinker.link(String(feature.properties['??a Ch?']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">huyen</th>\
+                        <td>' + (feature.properties['huyen'] !== null ? autolinker.link(String(feature.properties['huyen']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ager</th>\
+                        <td>' + (feature.properties['Ager'] !== null ? autolinker.link(String(feature.properties['Ager']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_phnloaitheohuyn_5_0(feature) {
+            switch(String(feature.properties['huyen'])) {
+                case 'CHAU THANH':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(189,23,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'CU LAO':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,45,147,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Huyện Kế sach':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(223,81,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'KE SACH':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(166,255,1,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'LONG PHU':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,208,156,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'MY TU':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,180,168,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'MY XUYEN':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(98,178,0,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'NGA NAM':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(218,227,54,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'THANH TRI':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,185,56,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'TP.SOC TRANG':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,126,33,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'TP.SOCTRANG':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,37,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'TRAN DE':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(37,92,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'VINH CHAU':
+                    return {
+                pane: 'pane_phnloaitheohuyn_5',
+                radius: 16.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,55,135,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_phnloaitheohuyn_5');
+        map.getPane('pane_phnloaitheohuyn_5').style.zIndex = 405;
+        map.getPane('pane_phnloaitheohuyn_5').style['mix-blend-mode'] = 'normal';
+        var layer_phnloaitheohuyn_5 = new L.geoJson(json_phnloaitheohuyn_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_phnloaitheohuyn_5',
+            layerName: 'layer_phnloaitheohuyn_5',
+            pane: 'pane_phnloaitheohuyn_5',
+            onEachFeature: pop_phnloaitheohuyn_5,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_phnloaitheohuyn_5_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_phnloaitheohuyn_5);
+        map.addLayer(layer_phnloaitheohuyn_5);
+        function pop_phnloitheotui_6(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Year of construction</th>\
+                        <td>' + (feature.properties['N?m X�y'] !== null ? autolinker.link(String(feature.properties['N?m X�y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Adress</th>\
+                        <td>' + (feature.properties['??a Ch?'] !== null ? autolinker.link(String(feature.properties['??a Ch?']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">huyen</th>\
+                        <td>' + (feature.properties['huyen'] !== null ? autolinker.link(String(feature.properties['huyen']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ager</th>\
+                        <td>' + (feature.properties['Ager'] !== null ? autolinker.link(String(feature.properties['Ager']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_phnloitheotui_6_0(feature) {
+            switch(String(feature.properties['Ager'])) {
+                case '<50':
+                    return {
+                pane: 'pane_phnloitheotui_6',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,0,212,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '>500':
+                    return {
+                pane: 'pane_phnloitheotui_6',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,0,47,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '100-300':
+                    return {
+                pane: 'pane_phnloitheotui_6',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(100,182,0,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '300-500':
+                    return {
+                pane: 'pane_phnloitheotui_6',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,255,1,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '50-100':
+                    return {
+                pane: 'pane_phnloitheotui_6',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(1,230,255,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_phnloitheotui_6');
+        map.getPane('pane_phnloitheotui_6').style.zIndex = 406;
+        map.getPane('pane_phnloitheotui_6').style['mix-blend-mode'] = 'normal';
+        var layer_phnloitheotui_6 = new L.geoJson(json_phnloitheotui_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_phnloitheotui_6',
+            layerName: 'layer_phnloitheotui_6',
+            pane: 'pane_phnloitheotui_6',
+            onEachFeature: pop_phnloitheotui_6,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_phnloitheotui_6_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_phnloitheotui_6);
+        map.addLayer(layer_phnloitheotui_6);
+        function pop_PLCap_7(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['T�n Ch��'] !== null ? autolinker.link(String(feature.properties['T�n Ch��']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">T�n Khme</th>\
+                        <td>' + (feature.properties['T�n Khme'] !== null ? autolinker.link(String(feature.properties['T�n Khme']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Nam Xay</strong><br />' + (feature.properties['N?m X�y'] !== null ? autolinker.link(String(feature.properties['N?m X�y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Dia chi</th>\
+                        <td>' + (feature.properties['??a Ch?'] !== null ? autolinker.link(String(feature.properties['??a Ch?']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tu?i</th>\
+                        <td>' + (feature.properties['Tu?i'] !== null ? autolinker.link(String(feature.properties['Tu?i']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">huyen</th>\
+                        <td>' + (feature.properties['huyen'] !== null ? autolinker.link(String(feature.properties['huyen']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">classilica</th>\
+                        <td>' + (feature.properties['classilica'] !== null ? autolinker.link(String(feature.properties['classilica']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ager</th>\
+                        <td>' + (feature.properties['Ager'] !== null ? autolinker.link(String(feature.properties['Ager']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PLCap_7_0(feature) {
+            switch(String(feature.properties['classilica'])) {
+                case 'cấp quốc gia':
+                    return {
+                pane: 'pane_PLCap_7',
+                radius: 5.2,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,0,42,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'cấp tỉnh':
+                    return {
+                pane: 'pane_PLCap_7',
+                radius: 5.2,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,137,194,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'chưa phân hạng':
+                    return {
+                pane: 'pane_PLCap_7',
+                radius: 5.2,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(93,207,155,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_PLCap_7');
+        map.getPane('pane_PLCap_7').style.zIndex = 407;
+        map.getPane('pane_PLCap_7').style['mix-blend-mode'] = 'normal';
+        var layer_PLCap_7 = new L.geoJson(json_PLCap_7, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PLCap_7',
+            layerName: 'layer_PLCap_7',
+            pane: 'pane_PLCap_7',
+            onEachFeature: pop_PLCap_7,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_PLCap_7_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PLCap_7);
+        map.addLayer(layer_PLCap_7);
+        function pop_nuoc_8(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ISO'] !== null ? autolinker.link(String(feature.properties['ISO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['COUNTRY'] !== null ? autolinker.link(String(feature.properties['COUNTRY']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['F_CODE_DES'] !== null ? autolinker.link(String(feature.properties['F_CODE_DES']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['HYC_DESCRI'] !== null ? autolinker.link(String(feature.properties['HYC_DESCRI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(String(feature.properties['NAME']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_nuoc_8_0() {
+            return {
+                pane: 'pane_nuoc_8',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 3.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,140,216,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_nuoc_8');
+        map.getPane('pane_nuoc_8').style.zIndex = 408;
+        map.getPane('pane_nuoc_8').style['mix-blend-mode'] = 'normal';
+        var layer_nuoc_8 = new L.geoJson(json_nuoc_8, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_nuoc_8',
+            layerName: 'layer_nuoc_8',
+            pane: 'pane_nuoc_8',
+            onEachFeature: pop_nuoc_8,
+            style: style_nuoc_8_0,
+        });
+        bounds_group.addLayer(layer_nuoc_8);
+        map.addLayer(layer_nuoc_8);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        setBounds();
+        var i = 0;
+        layer_RanhgiiHuyn_2.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['NAME_2'] !== null?String('<div style="color: #000000; font-size: 13pt; font-weight: bold; font-family: \'Tahoma\', sans-serif;">' + layer.feature.properties['NAME_2']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_RanhgiiHuyn_2'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        map.addControl(new L.Control.Search({
+            layer: layer_PLCap_7,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'classilica'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"Ager": "str","classilica": "str","huyen": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+        var i = 0;
+        layer_RanhgiiHuyn_2.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['NAME_2'] !== null?String('<div style="color: #000000; font-size: 13pt; font-weight: bold; font-family: \'Tahoma\', sans-serif;">' + layer.feature.properties['NAME_2']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_RanhgiiHuyn_2'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_Ager = document.createElement('div');
+            div_Ager.id = "div_Ager";
+            div_Ager.className= "filterselect";
+            document.getElementById("menu").appendChild(div_Ager);
+            sel_Ager = document.createElement('select');
+            sel_Ager.multiple = true;
+            sel_Ager.size = 5;
+            sel_Ager.id = "sel_Ager";
+            var Ager_options_str = "<option value='' unselected></option>";
+            sel_Ager.onchange = function(){filterFunc()};
+            Ager_options_str  += '<option value="100-300">100-300</option>';
+            Ager_options_str  += '<option value="300-500">300-500</option>';
+            Ager_options_str  += '<option value="50-100">50-100</option>';
+            Ager_options_str  += '<option value="<50"><50</option>';
+            Ager_options_str  += '<option value=">500">>500</option>';
+            sel_Ager.innerHTML = Ager_options_str;
+            div_Ager.appendChild(sel_Ager);
+            var lab_Ager = document.createElement('div');
+            lab_Ager.innerHTML = 'Ager';
+            lab_Ager.className = 'filterlabel';
+            div_Ager.appendChild(lab_Ager);
+            var reset_Ager = document.createElement('div');
+            reset_Ager.innerHTML = 'clear filter';
+            reset_Ager.className = 'filterlabel';
+            reset_Ager.onclick = function() {
+                var options = document.getElementById("sel_Ager").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_Ager.appendChild(reset_Ager);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_classilica = document.createElement('div');
+            div_classilica.id = "div_classilica";
+            div_classilica.className= "filterselect";
+            document.getElementById("menu").appendChild(div_classilica);
+            sel_classilica = document.createElement('select');
+            sel_classilica.multiple = true;
+            sel_classilica.size = 9;
+            sel_classilica.id = "sel_classilica";
+            var classilica_options_str = "<option value='' unselected></option>";
+            sel_classilica.onchange = function(){filterFunc()};
+            classilica_options_str  += '<option value="NULL">NULL</option>';
+            classilica_options_str  += '<option value="Di tích kiến trúc nghệ thuật cấp quốc gia">Di tích kiến trúc nghệ thuật cấp quốc gia</option>';
+            classilica_options_str  += '<option value="Di tích lịch sử cách mạng cấp tỉnh">Di tích lịch sử cách mạng cấp tỉnh</option>';
+            classilica_options_str  += '<option value="Di tích lịch sử văn hóa cấp tỉnh">Di tích lịch sử văn hóa cấp tỉnh</option>';
+            classilica_options_str  += '<option value="NUDi tích kiến trúc nghệ thuật cấp quốc giaLL">NUDi tích kiến trúc nghệ thuật cấp quốc giaLL</option>';
+            classilica_options_str  += '<option value="chưa phân hạng">chưa phân hạng</option>';
+            classilica_options_str  += '<option value="cấp quốc gia">cấp quốc gia</option>';
+            classilica_options_str  += '<option value="cấp tỉnh">cấp tỉnh</option>';
+            classilica_options_str  += '<option value="mạng cấp tỉnh">mạng cấp tỉnh</option>';
+            sel_classilica.innerHTML = classilica_options_str;
+            div_classilica.appendChild(sel_classilica);
+            var lab_classilica = document.createElement('div');
+            lab_classilica.innerHTML = 'classilica';
+            lab_classilica.className = 'filterlabel';
+            div_classilica.appendChild(lab_classilica);
+            var reset_classilica = document.createElement('div');
+            reset_classilica.innerHTML = 'clear filter';
+            reset_classilica.className = 'filterlabel';
+            reset_classilica.onclick = function() {
+                var options = document.getElementById("sel_classilica").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_classilica.appendChild(reset_classilica);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_huyen = document.createElement('div');
+            div_huyen.id = "div_huyen";
+            div_huyen.className= "filterselect";
+            document.getElementById("menu").appendChild(div_huyen);
+            sel_huyen = document.createElement('select');
+            sel_huyen.multiple = true;
+            sel_huyen.size = 10;
+            sel_huyen.id = "sel_huyen";
+            var huyen_options_str = "<option value='' unselected></option>";
+            sel_huyen.onchange = function(){filterFunc()};
+            huyen_options_str  += '<option value="NULL">NULL</option>';
+            huyen_options_str  += '<option value="CHAU THANH">CHAU THANH</option>';
+            huyen_options_str  += '<option value="CU LAO">CU LAO</option>';
+            huyen_options_str  += '<option value="Huyện Kế sach">Huyện Kế sach</option>';
+            huyen_options_str  += '<option value="KE SACH">KE SACH</option>';
+            huyen_options_str  += '<option value="LONG PHU">LONG PHU</option>';
+            huyen_options_str  += '<option value="MY TU">MY TU</option>';
+            huyen_options_str  += '<option value="MY XUYEN">MY XUYEN</option>';
+            huyen_options_str  += '<option value="NGA NAM">NGA NAM</option>';
+            huyen_options_str  += '<option value="THANH TRI">THANH TRI</option>';
+            huyen_options_str  += '<option value="TP.SOC TRANG">TP.SOC TRANG</option>';
+            huyen_options_str  += '<option value="TP.SOCTRANG">TP.SOCTRANG</option>';
+            huyen_options_str  += '<option value="TRAN DE">TRAN DE</option>';
+            huyen_options_str  += '<option value="VINH CHAU">VINH CHAU</option>';
+            sel_huyen.innerHTML = huyen_options_str;
+            div_huyen.appendChild(sel_huyen);
+            var lab_huyen = document.createElement('div');
+            lab_huyen.innerHTML = 'huyen';
+            lab_huyen.className = 'filterlabel';
+            div_huyen.appendChild(lab_huyen);
+            var reset_huyen = document.createElement('div');
+            reset_huyen.innerHTML = 'clear filter';
+            reset_huyen.className = 'filterlabel';
+            reset_huyen.onclick = function() {
+                var options = document.getElementById("sel_huyen").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_huyen.appendChild(reset_huyen);
+        resetLabels([layer_RanhgiiHuyn_2]);
+        map.on("zoomend", function(){
+            resetLabels([layer_RanhgiiHuyn_2]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_RanhgiiHuyn_2]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_RanhgiiHuyn_2]);
+        });
+        </script>
+    </body>
+</html>
